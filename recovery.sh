@@ -232,6 +232,7 @@ if [ -f /recovery/.offlineweb ]; then
 		mkdir -p /var/www/html
 	fi
 	rsync -aP $offlinewebmount/* /var/www/html/
+	for i in /recovery/offlinewebarchives/*; do tar xf $i -C /; done
 	umount $offlinewebmount
 	rmdir $offlinewebmount
         log "Restoring offline web content finished"
