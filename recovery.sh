@@ -146,14 +146,16 @@ EOF
 	if [ x$snapshot = x ]; then
 		snapshot=1
 		echo 1 > /recovery/snapshot
+	else
+		echo $(($snapshot+1)) > /recovery/snapshot
 	fi
+	snapshot=$(cat /recovery/snapshot 2>/dev/null)
 	log "Creating recovery archive, do not reboot/interrupt till it is done.."
 	if [ ! -d /recovery/system ]; then
 		LANG=en_US.UTF-8 borg init --encryption=none /recovery/system
 	fi
 	LANG=en_US.UTF-8 borg create --stats --progress --compression lz4 --exclude-from /recovery/recexclude /recovery/system::$snapshot /
 	log "Recovery archives can be found here: /recovery/"
-	echo $(($snapshot+1)) > /recovery/snapshot
 	create_restorevars
 }
 create_homebackup () {
@@ -274,7 +276,7 @@ restore () {
                 rsync -avP $borgmount/* /
                 umount $borgmount && rmdir $borgmount
 #		borg extract -v /recovery/system::1
-		restore_offlineweb
+#		restore_offlineweb
 		restore_ltsp
 		log "Restoring finished, reboot is recommended"
         else
@@ -436,7 +438,7 @@ if cat /proc/cmdline |grep -q recoveryshell; then
 		rm /tmp/recoveryshell
 	fi
 else
-	$1
+	$1 $2
 fi
 exit 0
 
