@@ -146,16 +146,14 @@ EOF
 	if [ x$snapshot = x ]; then
 		snapshot=1
 		echo 1 > /recovery/snapshot
-	else
-		echo $(($snapshot+1)) > /recovery/snapshot
 	fi
-	snapshot=$(cat /recovery/snapshot 2>/dev/null)
 	log "Creating recovery archive, do not reboot/interrupt till it is done.."
 	if [ ! -d /recovery/system ]; then
 		LANG=en_US.UTF-8 borg init --encryption=none /recovery/system
 	fi
 	LANG=en_US.UTF-8 borg create --stats --progress --compression lz4 --exclude-from /recovery/recexclude /recovery/system::$snapshot /
 	log "Recovery archives can be found here: /recovery/"
+	echo $(($snapshot+1)) > /recovery/snapshot
 	create_restorevars
 }
 create_homebackup () {
@@ -247,6 +245,23 @@ if [ -f /recovery/.ltsp ]; then
 		mkdir -p /opt/ltsp/images
 	fi
 	rsync -aP /recovery/.ltsp /opt/ltsp/images/amd64.img
+
+	mkdir /recovery/tmount
+	mount /recovery/.ltsp tmount
+	mv /var/lib/tftpboot/ltsp/amd64/initrd-mss /var/lib/tftpboot/ltsp/amd64/initrd-mss-backup 2>/dev/null
+	mv /var/lib/tftpboot/ltsp/amd64/linux-mss /var/lib/tftpboot/ltsp/amd64/linux-mss-backup 2>/dev/null
+	cd /recovery/tmount/boot/
+	cp initrd*-generic /var/lib/tftpboot/ltsp/amd64/initrd-mss
+	cp vmlinuz*-generic /var/lib/tftpboot/ltsp/amd64/linux-mss
+	chmod +r /var/lib/tftpboot/ltsp/amd64/*
+	cd -
+	umount /recovery/tmount
+	rmdir /recovery/tmount
+	cd /var/lib/tftpboot/ltsp/amd64/
+	ln -snf linux-mss vmlinuz
+	ln -snf initrd-mss initrd.img
+
+
         if [ -f /recovery/.ltsp.i386 ]; then
                 rsync -aP /recovery/.ltsp.i386 /opt/ltsp/images/i386.img
         fi
@@ -276,7 +291,7 @@ restore () {
                 rsync -avP $borgmount/* /
                 umount $borgmount && rmdir $borgmount
 #		borg extract -v /recovery/system::1
-#		restore_offlineweb
+		restore_offlineweb
 		restore_ltsp
 		log "Restoring finished, reboot is recommended"
         else
@@ -438,7 +453,7 @@ if cat /proc/cmdline |grep -q recoveryshell; then
 		rm /tmp/recoveryshell
 	fi
 else
-	$1 $2
+	$1
 fi
 exit 0
 
