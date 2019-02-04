@@ -453,7 +453,7 @@ if cat /proc/cmdline |grep -q recoveryshell; then
 		rm /tmp/recoveryshell
 	fi
 else
-	$1
+	$1 $2
 fi
 exit 0
 
