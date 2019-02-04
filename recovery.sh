@@ -291,7 +291,7 @@ restore () {
                 rsync -avP $borgmount/* /
                 umount $borgmount && rmdir $borgmount
 #		borg extract -v /recovery/system::1
-		restore_offlineweb
+		#restore_offlineweb
 		restore_ltsp
 		log "Restoring finished, reboot is recommended"
         else
